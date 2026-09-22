@@ -21,7 +21,6 @@ const path = require("path");
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
-
 const DATA_FILE = path.join(__dirname, "stock-data.json");
 
 const SMALL_MIN = 2000;
@@ -38,14 +37,8 @@ const client = new Client({
 let data = {
   users: {},
   stocks: {
-    WB그룹: {
-      price: 1000,
-      type: "small",
-    },
-    유마그룹: {
-      price: 1000,
-      type: "small",
-    },
+    WB그룹: { price: 1000, type: "small" },
+    유마그룹: { price: 1000, type: "small" },
   },
   guilds: {},
 };
@@ -67,8 +60,8 @@ function loadData() {
       data.stocks = saved.stocks || data.stocks;
       data.guilds = saved.guilds || {};
     }
-  } catch (err) {
-    console.error("데이터 불러오기 실패:", err);
+  } catch (e) {
+    console.error("데이터 불러오기 실패:", e);
   }
 
   for (const [name, stock] of Object.entries(data.stocks)) {
@@ -97,8 +90,8 @@ function saveData() {
       DATA_FILE,
       JSON.stringify(data, null, 2)
     );
-  } catch (err) {
-    console.error("데이터 저장 실패:", err);
+  } catch (e) {
+    console.error("저장 실패:", e);
   }
 }
 
@@ -130,7 +123,9 @@ function getAccount(userId) {
   const a = data.users[userId];
 
   a.money = String(a.money ?? "0");
-  a.taxFreeMoney = String(a.taxFreeMoney ?? "0");
+  a.taxFreeMoney = String(
+    a.taxFreeMoney ?? "0"
+  );
   a.stocks = a.stocks || {};
   a.taxFreeStocks = a.taxFreeStocks || {};
 
@@ -148,17 +143,28 @@ function isAdmin(interaction) {
 }
 
 function getTax(guildId, amount) {
-  const rate = BigInt(getGuild(guildId).taxRate);
-  return (BigInt(amount) * rate) / 100n;
+  const rate = BigInt(
+    getGuild(guildId).taxRate
+  );
+
+  return (
+    BigInt(amount) * rate
+  ) / 100n;
 }
 
 /* =========================
    응답 / 로그
 ========================= */
 
-async function replyDelete(interaction, content) {
+async function replyDelete(
+  interaction,
+  content
+) {
   try {
-    if (!interaction.replied && !interaction.deferred) {
+    if (
+      !interaction.replied &&
+      !interaction.deferred
+    ) {
       await interaction.reply({ content });
     } else {
       await interaction.editReply({ content });
@@ -170,20 +176,27 @@ async function replyDelete(interaction, content) {
   } catch {}
 }
 
-async function sendLog(guildId, title, description) {
+async function sendLog(
+  guildId,
+  title,
+  description
+) {
   try {
     const settings = getGuild(guildId);
 
     if (!settings.logChannelId) return;
 
-    const guild = client.guilds.cache.get(guildId);
+    const guild =
+      client.guilds.cache.get(guildId);
+
     if (!guild) return;
 
-    const channel = guild.channels.cache.get(
-      settings.logChannelId
-    );
+    const channel =
+      guild.channels.cache.get(
+        settings.logChannelId
+      );
 
-    if (!channel || !channel.isTextBased()) return;
+    if (!channel?.isTextBased()) return;
 
     await channel.send({
       embeds: [
@@ -193,8 +206,8 @@ async function sendLog(guildId, title, description) {
           .setTimestamp(),
       ],
     });
-  } catch (err) {
-    console.error("로그 오류:", err);
+  } catch (e) {
+    console.error("로그 오류:", e);
   }
 }
 
@@ -207,10 +220,15 @@ function stockText(guildId) {
 
   let text =
     `🧾 세율: **${settings.taxRate}%**\n` +
-    `🟢 소형 최소 매수금액: **${formatMoney(SMALL_MIN)}원**\n` +
-    `🔵 대형 최소 매수금액: **${formatMoney(LARGE_MIN)}원**\n\n`;
+    `🟢 소형 최소: **${formatMoney(
+      SMALL_MIN
+    )}원**\n` +
+    `🔵 대형 최소: **${formatMoney(
+      LARGE_MIN
+    )}원**\n\n`;
 
-  const stocks = Object.entries(data.stocks);
+  const stocks =
+    Object.entries(data.stocks);
 
   if (stocks.length === 0) {
     return text + "현재 주식이 없습니다.";
@@ -219,9 +237,13 @@ function stockText(guildId) {
   for (const [name, stock] of stocks) {
     text +=
       `📈 **${name}**\n` +
-      `가격: **${formatMoney(stock.price)}원**\n` +
+      `가격: **${formatMoney(
+        stock.price
+      )}원**\n` +
       `종류: **${
-        stock.type === "large" ? "대형" : "소형"
+        stock.type === "large"
+          ? "대형"
+          : "소형"
       }**\n\n`;
   }
 
@@ -287,18 +309,24 @@ async function updateStockMenu(guildId) {
       return;
     }
 
-    const guild = client.guilds.cache.get(guildId);
+    const guild =
+      client.guilds.cache.get(guildId);
+
     if (!guild) return;
 
-    const channel = guild.channels.cache.get(
-      settings.stockMenuChannelId
-    );
+    const channel =
+      guild.channels.cache.get(
+        settings.stockMenuChannelId
+      );
 
     if (!channel?.isTextBased()) return;
 
-    const message = await channel.messages
-      .fetch(settings.stockMenuMessageId)
-      .catch(() => null);
+    const message =
+      await channel.messages
+        .fetch(
+          settings.stockMenuMessageId
+        )
+        .catch(() => null);
 
     if (!message) return;
 
@@ -306,14 +334,14 @@ async function updateStockMenu(guildId) {
       embeds: [
         new EmbedBuilder()
           .setTitle("🏦 주식 거래소")
-          .setDescription(stockText(guildId))
+          .setDescription(
+            stockText(guildId)
+          )
           .setTimestamp(),
       ],
       components: stockButtons(),
     });
-  } catch (err) {
-    console.error("주식 메뉴 업데이트 실패:", err);
-  }
+  } catch {}
 }
 
 async function updateAllStockMenus() {
@@ -323,28 +351,72 @@ async function updateAllStockMenus() {
 }
 
 /* =========================
-   모달
+   후보 목록
 ========================= */
 
-function createModal(customId, title, fields) {
-  const modal = new ModalBuilder()
-    .setCustomId(customId)
-    .setTitle(title);
+async function updateCandidateList(guildId) {
+  const election =
+    elections.get(guildId);
 
-  for (const field of fields) {
-    modal.addComponents(
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder()
-          .setCustomId(field.id)
-          .setLabel(field.label)
-          .setPlaceholder(field.placeholder || "")
-          .setStyle(TextInputStyle.Short)
-          .setRequired(true)
-      )
-    );
+  if (!election) return;
+
+  if (
+    !election.candidateListChannelId ||
+    !election.candidateListMessageId
+  ) {
+    return;
   }
 
-  return modal;
+  try {
+    const guild =
+      client.guilds.cache.get(guildId);
+
+    if (!guild) return;
+
+    const channel =
+      guild.channels.cache.get(
+        election.candidateListChannelId
+      );
+
+    if (!channel?.isTextBased()) return;
+
+    const message =
+      await channel.messages
+        .fetch(
+          election.candidateListMessageId
+        )
+        .catch(() => null);
+
+    if (!message) return;
+
+    const candidates =
+      Object.keys(election.candidates);
+
+    let text = "";
+
+    if (candidates.length === 0) {
+      text =
+        "아직 등록된 후보가 없습니다.";
+    } else {
+      candidates.forEach((name, index) => {
+        text +=
+          `${index + 1}. **${name}**\n`;
+      });
+    }
+
+    await message.edit({
+      embeds: [
+        new EmbedBuilder()
+          .setTitle("🗳️ 후보 목록")
+          .setDescription(text)
+          .setFooter({
+            text:
+              "관리자가 게시한 후보 목록",
+          })
+          .setTimestamp(),
+      ],
+    });
+  } catch {}
 }
 
 /* =========================
@@ -368,7 +440,10 @@ async function buyStock(
 
   quantity = Number(quantity);
 
-  if (!Number.isInteger(quantity) || quantity <= 0) {
+  if (
+    !Number.isInteger(quantity) ||
+    quantity <= 0
+  ) {
     return replyDelete(
       interaction,
       "❌ 수량이 올바르지 않습니다."
@@ -383,12 +458,13 @@ async function buyStock(
   if (quantity > max) {
     return replyDelete(
       interaction,
-      `❌ 한 번에 최대 **${max}주**까지 구매할 수 있습니다.`
+      `❌ 한 번에 최대 **${max}주**입니다.`
     );
   }
 
   const total =
-    BigInt(stock.price) * BigInt(quantity);
+    BigInt(stock.price) *
+    BigInt(quantity);
 
   const minimum =
     stock.type === "large"
@@ -404,7 +480,8 @@ async function buyStock(
     );
   }
 
-  const account = getAccount(interaction.user.id);
+  const account =
+    getAccount(interaction.user.id);
 
   const moneyKey = taxFree
     ? "taxFreeMoney"
@@ -416,12 +493,18 @@ async function buyStock(
 
   const taxAmount = taxFree
     ? 0n
-    : getTax(interaction.guildId, total);
+    : getTax(
+        interaction.guildId,
+        total
+      );
 
   const finalPrice =
     total + taxAmount;
 
-  if (BigInt(account[moneyKey]) < finalPrice) {
+  if (
+    BigInt(account[moneyKey]) <
+    finalPrice
+  ) {
     return replyDelete(
       interaction,
       "❌ 돈이 부족합니다."
@@ -435,26 +518,32 @@ async function buyStock(
     ).toString();
 
   account[stockKey][stockName] =
-    Number(account[stockKey][stockName] || 0) +
-    quantity;
+    Number(
+      account[stockKey][stockName] || 0
+    ) + quantity;
 
   saveData();
 
   await sendLog(
     interaction.guildId,
-    taxFree ? "🛡️ 면세돈 매수" : "📈 주식 매수",
+    taxFree
+      ? "🛡️ 면세돈 매수"
+      : "📈 주식 매수",
     `사용자: ${interaction.user}\n` +
       `종목: **${stockName}**\n` +
       `수량: **${quantity}주**\n` +
-      `주식 금액: **${formatMoney(total)}원**\n` +
-      `세금: **${formatMoney(taxAmount)}원**\n` +
-      `총 결제: **${formatMoney(finalPrice)}원**`
+      `금액: **${formatMoney(
+        total
+      )}원**\n` +
+      `세금: **${formatMoney(
+        taxAmount
+      )}원**`
   );
 
   await replyDelete(
     interaction,
     `✅ **${stockName} ${quantity}주** 매수 완료\n` +
-      `결제 금액: **${formatMoney(
+      `결제: **${formatMoney(
         finalPrice
       )}원**`
   );
@@ -483,14 +572,18 @@ async function sellStock(
 
   quantity = Number(quantity);
 
-  if (!Number.isInteger(quantity) || quantity <= 0) {
+  if (
+    !Number.isInteger(quantity) ||
+    quantity <= 0
+  ) {
     return replyDelete(
       interaction,
       "❌ 수량이 올바르지 않습니다."
     );
   }
 
-  const account = getAccount(interaction.user.id);
+  const account =
+    getAccount(interaction.user.id);
 
   const stockKey = taxFree
     ? "taxFreeStocks"
@@ -500,13 +593,14 @@ async function sellStock(
     ? "taxFreeMoney"
     : "money";
 
-  const owned =
-    Number(account[stockKey][stockName] || 0);
+  const owned = Number(
+    account[stockKey][stockName] || 0
+  );
 
   if (owned < quantity) {
     return replyDelete(
       interaction,
-      `❌ 보유 주식이 부족합니다.\n현재 보유: **${owned}주**`
+      `❌ 보유 주식이 부족합니다.`
     );
   }
 
@@ -516,7 +610,10 @@ async function sellStock(
 
   const taxAmount = taxFree
     ? 0n
-    : getTax(interaction.guildId, gross);
+    : getTax(
+        interaction.guildId,
+        gross
+      );
 
   const received =
     gross - taxAmount;
@@ -540,13 +637,18 @@ async function sellStock(
 
   await sendLog(
     interaction.guildId,
-    taxFree ? "🛡️ 면세돈 매도" : "📉 주식 매도",
+    taxFree
+      ? "🛡️ 면세매도"
+      : "📉 주식 매도",
     `사용자: ${interaction.user}\n` +
       `종목: **${stockName}**\n` +
       `수량: **${quantity}주**\n` +
-      `판매 금액: **${formatMoney(gross)}원**\n` +
-      `세금: **${formatMoney(taxAmount)}원**\n` +
-      `받은 금액: **${formatMoney(received)}원**`
+      `금액: **${formatMoney(
+        gross
+      )}원**\n` +
+      `세금: **${formatMoney(
+        taxAmount
+      )}원**`
   );
 
   await replyDelete(
@@ -572,19 +674,21 @@ const commands = [
   new SlashCommandBuilder()
     .setName("후보등록")
     .setDescription("후보 등록")
-    .addStringOption(option =>
-      option
-        .setName("이름")
+    .addStringOption(o =>
+      o.setName("이름")
         .setDescription("후보 이름")
         .setRequired(true)
     ),
 
   new SlashCommandBuilder()
+    .setName("후보목록")
+    .setDescription("후보 목록 게시"),
+
+  new SlashCommandBuilder()
     .setName("투표")
     .setDescription("투표")
-    .addStringOption(option =>
-      option
-        .setName("후보")
+    .addStringOption(o =>
+      o.setName("후보")
         .setDescription("후보 이름")
         .setRequired(true)
     ),
@@ -607,7 +711,7 @@ const commands = [
 
   new SlashCommandBuilder()
     .setName("주식메뉴")
-    .setDescription("주식 거래소 메뉴 생성"),
+    .setDescription("주식 메뉴"),
 
   new SlashCommandBuilder()
     .setName("잔액")
@@ -615,7 +719,7 @@ const commands = [
 
   new SlashCommandBuilder()
     .setName("내주식")
-    .setDescription("내 주식 확인"),
+    .setDescription("내 주식"),
 
   new SlashCommandBuilder()
     .setName("주식랭킹")
@@ -624,15 +728,13 @@ const commands = [
   new SlashCommandBuilder()
     .setName("매수")
     .setDescription("주식 매수")
-    .addStringOption(option =>
-      option
-        .setName("종목")
-        .setDescription("주식 이름")
+    .addStringOption(o =>
+      o.setName("종목")
+        .setDescription("주식")
         .setRequired(true)
     )
-    .addIntegerOption(option =>
-      option
-        .setName("수량")
+    .addIntegerOption(o =>
+      o.setName("수량")
         .setDescription("수량")
         .setMinValue(1)
         .setRequired(true)
@@ -640,16 +742,14 @@ const commands = [
 
   new SlashCommandBuilder()
     .setName("면세매수")
-    .setDescription("면세돈으로 주식 매수")
-    .addStringOption(option =>
-      option
-        .setName("종목")
-        .setDescription("주식 이름")
+    .setDescription("면세돈 매수")
+    .addStringOption(o =>
+      o.setName("종목")
+        .setDescription("주식")
         .setRequired(true)
     )
-    .addIntegerOption(option =>
-      option
-        .setName("수량")
+    .addIntegerOption(o =>
+      o.setName("수량")
         .setDescription("수량")
         .setMinValue(1)
         .setRequired(true)
@@ -658,15 +758,13 @@ const commands = [
   new SlashCommandBuilder()
     .setName("매도")
     .setDescription("주식 매도")
-    .addStringOption(option =>
-      option
-        .setName("종목")
-        .setDescription("주식 이름")
+    .addStringOption(o =>
+      o.setName("종목")
+        .setDescription("주식")
         .setRequired(true)
     )
-    .addIntegerOption(option =>
-      option
-        .setName("수량")
+    .addIntegerOption(o =>
+      o.setName("수량")
         .setDescription("수량")
         .setMinValue(1)
         .setRequired(true)
@@ -674,16 +772,14 @@ const commands = [
 
   new SlashCommandBuilder()
     .setName("면세매도")
-    .setDescription("면세 주식 매도")
-    .addStringOption(option =>
-      option
-        .setName("종목")
-        .setDescription("주식 이름")
+    .setDescription("면세매도")
+    .addStringOption(o =>
+      o.setName("종목")
+        .setDescription("주식")
         .setRequired(true)
     )
-    .addIntegerOption(option =>
-      option
-        .setName("수량")
+    .addIntegerOption(o =>
+      o.setName("수량")
         .setDescription("수량")
         .setMinValue(1)
         .setRequired(true)
@@ -692,15 +788,13 @@ const commands = [
   new SlashCommandBuilder()
     .setName("돈추가")
     .setDescription("돈 추가")
-    .addUserOption(option =>
-      option
-        .setName("사용자")
+    .addUserOption(o =>
+      o.setName("사용자")
         .setDescription("사용자")
         .setRequired(true)
     )
-    .addStringOption(option =>
-      option
-        .setName("금액")
+    .addStringOption(o =>
+      o.setName("금액")
         .setDescription("금액")
         .setRequired(true)
     ),
@@ -708,15 +802,13 @@ const commands = [
   new SlashCommandBuilder()
     .setName("돈제거")
     .setDescription("돈 제거")
-    .addUserOption(option =>
-      option
-        .setName("사용자")
+    .addUserOption(o =>
+      o.setName("사용자")
         .setDescription("사용자")
         .setRequired(true)
     )
-    .addStringOption(option =>
-      option
-        .setName("금액")
+    .addStringOption(o =>
+      o.setName("금액")
         .setDescription("금액")
         .setRequired(true)
     ),
@@ -724,15 +816,13 @@ const commands = [
   new SlashCommandBuilder()
     .setName("면세돈추가")
     .setDescription("면세돈 추가")
-    .addUserOption(option =>
-      option
-        .setName("사용자")
+    .addUserOption(o =>
+      o.setName("사용자")
         .setDescription("사용자")
         .setRequired(true)
     )
-    .addStringOption(option =>
-      option
-        .setName("금액")
+    .addStringOption(o =>
+      o.setName("금액")
         .setDescription("금액")
         .setRequired(true)
     ),
@@ -740,15 +830,13 @@ const commands = [
   new SlashCommandBuilder()
     .setName("면세돈제거")
     .setDescription("면세돈 제거")
-    .addUserOption(option =>
-      option
-        .setName("사용자")
+    .addUserOption(o =>
+      o.setName("사용자")
         .setDescription("사용자")
         .setRequired(true)
     )
-    .addStringOption(option =>
-      option
-        .setName("금액")
+    .addStringOption(o =>
+      o.setName("금액")
         .setDescription("금액")
         .setRequired(true)
     ),
@@ -756,23 +844,20 @@ const commands = [
   new SlashCommandBuilder()
     .setName("주식추가")
     .setDescription("주식 추가")
-    .addStringOption(option =>
-      option
-        .setName("이름")
+    .addStringOption(o =>
+      o.setName("이름")
         .setDescription("주식 이름")
         .setRequired(true)
     )
-    .addIntegerOption(option =>
-      option
-        .setName("가격")
-        .setDescription("초기 가격")
+    .addIntegerOption(o =>
+      o.setName("가격")
+        .setDescription("가격")
         .setMinValue(1)
         .setRequired(true)
     )
-    .addStringOption(option =>
-      option
-        .setName("종류")
-        .setDescription("주식 종류")
+    .addStringOption(o =>
+      o.setName("종류")
+        .setDescription("종류")
         .setRequired(true)
         .addChoices(
           {
@@ -789,9 +874,8 @@ const commands = [
   new SlashCommandBuilder()
     .setName("주식삭제")
     .setDescription("주식 삭제")
-    .addStringOption(option =>
-      option
-        .setName("이름")
+    .addStringOption(o =>
+      o.setName("이름")
         .setDescription("주식 이름")
         .setRequired(true)
     ),
@@ -799,15 +883,13 @@ const commands = [
   new SlashCommandBuilder()
     .setName("주식가격")
     .setDescription("주가 변경")
-    .addStringOption(option =>
-      option
-        .setName("이름")
+    .addStringOption(o =>
+      o.setName("이름")
         .setDescription("주식 이름")
         .setRequired(true)
     )
-    .addIntegerOption(option =>
-      option
-        .setName("가격")
+    .addIntegerOption(o =>
+      o.setName("가격")
         .setDescription("새 가격")
         .setMinValue(1)
         .setRequired(true)
@@ -816,9 +898,8 @@ const commands = [
   new SlashCommandBuilder()
     .setName("세금률설정")
     .setDescription("세율 설정")
-    .addIntegerOption(option =>
-      option
-        .setName("세율")
+    .addIntegerOption(o =>
+      o.setName("세율")
         .setDescription("0~100")
         .setMinValue(0)
         .setMaxValue(100)
@@ -828,47 +909,51 @@ const commands = [
   new SlashCommandBuilder()
     .setName("로그채널")
     .setDescription("로그 채널 설정")
-    .addChannelOption(option =>
-      option
-        .setName("채널")
+    .addChannelOption(o =>
+      o.setName("채널")
         .setDescription("로그 채널")
-        .addChannelTypes(ChannelType.GuildText)
+        .addChannelTypes(
+          ChannelType.GuildText
+        )
         .setRequired(true)
     ),
 
   new SlashCommandBuilder()
     .setName("관리자메뉴")
     .setDescription("관리자 메뉴"),
-].map(command => command.toJSON());
+].map(x => x.toJSON());
 
 /* =========================
-   Discord 시작
+   명령어 등록
 ========================= */
 
 client.once("ready", async () => {
-  console.log(`✅ 로그인 성공: ${client.user.tag}`);
+  console.log(
+    `✅ 로그인: ${client.user.tag}`
+  );
 
   const rest = new REST({
     version: "10",
   }).setToken(TOKEN);
 
   try {
-    /*
-      기존 글로벌 명령어 제거
-      → 돈추가 2개 / 돈제거 2개 같은 중복 방지
-    */
+    // 글로벌 중복 명령어 삭제
     await rest.put(
-      Routes.applicationCommands(CLIENT_ID),
+      Routes.applicationCommands(
+        CLIENT_ID
+      ),
       {
         body: [],
       }
     );
 
-    console.log("🧹 기존 글로벌 명령어 삭제 완료");
-  } catch (err) {
+    console.log(
+      "🧹 글로벌 중복 명령어 삭제 완료"
+    );
+  } catch (e) {
     console.error(
-      "글로벌 명령어 삭제 실패:",
-      err.message
+      "글로벌 삭제 실패:",
+      e.message
     );
   }
 
@@ -885,12 +970,12 @@ client.once("ready", async () => {
       );
 
       console.log(
-        `✅ 명령어 등록 완료: ${guild.name}`
+        `✅ 명령어 등록: ${guild.name}`
       );
-    } catch (err) {
+    } catch (e) {
       console.error(
-        `❌ ${guild.name} 명령어 등록 실패:`,
-        err.message
+        "명령어 등록 실패:",
+        e.message
       );
     }
   }
@@ -911,66 +996,425 @@ client.on("guildCreate", async guild => {
         body: commands,
       }
     );
-  } catch (err) {
-    console.error(
-      "새 서버 명령어 등록 실패:",
-      err.message
-    );
-  }
+  } catch {}
 });
 
 /* =========================
    인터랙션
 ========================= */
 
-client.on("interactionCreate", async interaction => {
-  try {
-    /* ---------- 버튼 ---------- */
+client.on(
+  "interactionCreate",
+  async interaction => {
+    try {
+      /* ---------- 버튼 ---------- */
 
-    if (interaction.isButton()) {
-      const id = interaction.customId;
+      if (interaction.isButton()) {
+        const id =
+          interaction.customId;
 
-      if (
-        [
-          "stock_buy",
-          "stock_taxbuy",
-          "stock_sell",
-          "stock_taxsell",
-        ].includes(id)
-      ) {
-        const titleMap = {
-          stock_buy: "일반돈 매수",
-          stock_taxbuy: "면세돈 매수",
-          stock_sell: "일반돈 매도",
-          stock_taxsell: "면세돈 매도",
-        };
+        if (
+          [
+            "stock_buy",
+            "stock_taxbuy",
+            "stock_sell",
+            "stock_taxsell",
+          ].includes(id)
+        ) {
+          const titles = {
+            stock_buy:
+              "일반돈으로 매수",
+            stock_taxbuy:
+              "면세돈으로 매수",
+            stock_sell:
+              "일반돈으로 매도",
+            stock_taxsell:
+              "면세돈으로 매도",
+          };
 
-        await interaction.showModal(
-          createModal(
-            `trade_${id}`,
-            titleMap[id],
-            [
-              {
-                id: "stock",
-                label: "주식 이름",
-                placeholder: "예: WB그룹",
-              },
-              {
-                id: "quantity",
-                label: "수량",
-                placeholder: "예: 5",
-              },
-            ]
-          )
-        );
+          const modal =
+            new ModalBuilder()
+              .setCustomId(
+                `trade_${id}`
+              )
+              .setTitle(titles[id]);
+
+          modal.addComponents(
+            new ActionRowBuilder().addComponents(
+              new TextInputBuilder()
+                .setCustomId("stock")
+                .setLabel("주식 이름")
+                .setPlaceholder(
+                  "예: WB그룹"
+                )
+                .setStyle(
+                  TextInputStyle.Short
+                )
+                .setRequired(true)
+            ),
+            new ActionRowBuilder().addComponents(
+              new TextInputBuilder()
+                .setCustomId(
+                  "quantity"
+                )
+                .setLabel("수량")
+                .setPlaceholder(
+                  "예: 5"
+                )
+                .setStyle(
+                  TextInputStyle.Short
+                )
+                .setRequired(true)
+            )
+          );
+
+          return interaction.showModal(
+            modal
+          );
+        }
+
+        if (id === "stock_wallet") {
+          const a = getAccount(
+            interaction.user.id
+          );
+
+          return interaction.reply({
+            content:
+              `💰 일반돈: **${formatMoney(
+                a.money
+              )}원**\n` +
+              `🛡️ 면세돈: **${formatMoney(
+                a.taxFreeMoney
+              )}원**`,
+            ephemeral: true,
+          });
+        }
+
+        if (id === "stock_mine") {
+          const a = getAccount(
+            interaction.user.id
+          );
+
+          let text =
+            "📊 **내 주식**\n\n";
+
+          for (const [
+            name,
+            qty,
+          ] of Object.entries(
+            a.stocks
+          )) {
+            text +=
+              `📈 ${name}: **${qty}주**\n`;
+          }
+
+          for (const [
+            name,
+            qty,
+          ] of Object.entries(
+            a.taxFreeStocks
+          )) {
+            text +=
+              `🛡️ ${name}: **${qty}주**\n`;
+          }
+
+          if (
+            text ===
+            "📊 **내 주식**\n\n"
+          ) {
+            text +=
+              "보유 주식이 없습니다.";
+          }
+
+          return interaction.reply({
+            content: text,
+            ephemeral: true,
+          });
+        }
+
+        if (id === "stock_list") {
+          return interaction.reply({
+            content: stockText(
+              interaction.guildId
+            ),
+            ephemeral: true,
+          });
+        }
+
+        if (id === "stock_ranking") {
+          const ranking = [];
+
+          for (const [
+            userId,
+            a,
+          ] of Object.entries(
+            data.users
+          )) {
+            let total =
+              BigInt(
+                a.money || 0
+              ) +
+              BigInt(
+                a.taxFreeMoney || 0
+              );
+
+            for (const [
+              name,
+              qty,
+            ] of Object.entries(
+              a.stocks || {}
+            )) {
+              if (
+                data.stocks[name]
+              ) {
+                total +=
+                  BigInt(
+                    data.stocks[
+                      name
+                    ].price
+                  ) *
+                  BigInt(qty);
+              }
+            }
+
+            ranking.push({
+              userId,
+              total,
+            });
+          }
+
+          ranking.sort(
+            (a, b) =>
+              a.total > b.total
+                ? -1
+                : 1
+          );
+
+          let text =
+            "🏆 **주식 랭킹**\n\n";
+
+          ranking
+            .slice(0, 10)
+            .forEach(
+              (item, index) => {
+                text +=
+                  `${index + 1}. <@${item.userId}> — **${formatMoney(
+                    item.total
+                  )}원**\n`;
+              }
+            );
+
+          if (
+            ranking.length === 0
+          ) {
+            text +=
+              "아직 참가자가 없습니다.";
+          }
+
+          return interaction.reply({
+            content: text,
+            ephemeral: true,
+          });
+        }
 
         return;
       }
 
-      if (id === "stock_wallet") {
-        const a = getAccount(
+      /* ---------- 모달 ---------- */
+
+      if (
+        interaction.isModalSubmit()
+      ) {
+        const id =
+          interaction.customId;
+
+        if (
+          id.startsWith("trade_")
+        ) {
+          const type =
+            id.replace(
+              "trade_",
+              ""
+            );
+
+          const stock =
+            interaction.fields.getTextInputValue(
+              "stock"
+            );
+
+          const quantity =
+            interaction.fields.getTextInputValue(
+              "quantity"
+            );
+
+          if (
+            type === "stock_buy"
+          ) {
+            return buyStock(
+              interaction,
+              stock,
+              quantity,
+              false
+            );
+          }
+
+          if (
+            type ===
+            "stock_taxbuy"
+          ) {
+            return buyStock(
+              interaction,
+              stock,
+              quantity,
+              true
+            );
+          }
+
+          if (
+            type === "stock_sell"
+          ) {
+            return sellStock(
+              interaction,
+              stock,
+              quantity,
+              false
+            );
+          }
+
+          if (
+            type ===
+            "stock_taxsell"
+          ) {
+            return sellStock(
+              interaction,
+              stock,
+              quantity,
+              true
+            );
+          }
+        }
+
+        return;
+      }
+
+      if (
+        !interaction.isChatInputCommand()
+      ) {
+        return;
+      }
+
+      const command =
+        interaction.commandName;
+
+      const adminOnly = [
+        "선거시작",
+        "후보등록",
+        "후보목록",
+        "선거종료",
+        "결과",
+        "주식메뉴",
+        "돈추가",
+        "돈제거",
+        "면세돈추가",
+        "면세돈제거",
+        "주식추가",
+        "주식삭제",
+        "주식가격",
+        "세금률설정",
+        "로그채널",
+        "관리자메뉴",
+      ];
+
+      if (
+        adminOnly.includes(
+          command
+        ) &&
+        !isAdmin(interaction)
+      ) {
+        return replyDelete(
+          interaction,
+          "❌ 서버 관리자만 사용할 수 있습니다."
+        );
+      }
+
+      /* ---------- 주식 메뉴 ---------- */
+
+      if (
+        command === "주식메뉴"
+      ) {
+        const message =
+          await interaction.channel.send(
+            {
+              embeds: [
+                new EmbedBuilder()
+                  .setTitle(
+                    "🏦 주식 거래소"
+                  )
+                  .setDescription(
+                    stockText(
+                      interaction.guildId
+                    )
+                  )
+                  .setTimestamp(),
+              ],
+              components:
+                stockButtons(),
+            }
+          );
+
+        const settings =
+          getGuild(
+            interaction.guildId
+          );
+
+        settings.stockMenuChannelId =
+          interaction.channelId;
+
+        settings.stockMenuMessageId =
+          message.id;
+
+        saveData();
+
+        return replyDelete(
+          interaction,
+          "✅ 주식 거래소 메뉴를 만들었습니다."
+        );
+      }
+
+      /* ---------- 주식 ---------- */
+
+      if (
+        command === "주식참여"
+      ) {
+        getAccount(
           interaction.user.id
         );
+
+        saveData();
+
+        return interaction.reply({
+          content:
+            "✅ 주식 참여 완료!",
+          ephemeral: true,
+        });
+      }
+
+      if (
+        command === "주식목록"
+      ) {
+        return interaction.reply({
+          content: stockText(
+            interaction.guildId
+          ),
+          ephemeral: true,
+        });
+      }
+
+      if (command === "잔액") {
+        const a =
+          getAccount(
+            interaction.user.id
+          );
 
         return interaction.reply({
           content:
@@ -984,920 +1428,811 @@ client.on("interactionCreate", async interaction => {
         });
       }
 
-      if (id === "stock_mine") {
-        const a = getAccount(
-          interaction.user.id
-        );
+      if (
+        command === "내주식"
+      ) {
+        const a =
+          getAccount(
+            interaction.user.id
+          );
 
-        let text = "📊 **내 주식**\n\n";
+        let text =
+          "📊 **내 주식**\n\n";
 
-        for (const [name, qty] of Object.entries(
+        for (const [
+          name,
+          qty,
+        ] of Object.entries(
           a.stocks
         )) {
-          text += `📈 ${name}: **${qty}주**\n`;
+          text +=
+            `📈 ${name}: **${qty}주**\n`;
         }
 
         for (const [
           name,
           qty,
-        ] of Object.entries(a.taxFreeStocks)) {
-          text += `🛡️ ${name}: **${qty}주**\n`;
+        ] of Object.entries(
+          a.taxFreeStocks
+        )) {
+          text +=
+            `🛡️ ${name}: **${qty}주**\n`;
         }
 
-        if (text === "📊 **내 주식**\n\n") {
-          text += "보유 주식이 없습니다.";
-        }
-
-        return interaction.reply({
-          content: text,
-          ephemeral: true,
-        });
-      }
-
-      if (id === "stock_list") {
-        return interaction.reply({
-          content: stockText(
-            interaction.guildId
-          ),
-          ephemeral: true,
-        });
-      }
-
-      if (id === "stock_ranking") {
-        const ranking = [];
-
-        for (const [
-          userId,
-          a,
-        ] of Object.entries(data.users)) {
-          let total =
-            BigInt(a.money || 0) +
-            BigInt(a.taxFreeMoney || 0);
-
-          for (const [
-            name,
-            qty,
-          ] of Object.entries(a.stocks || {})) {
-            if (data.stocks[name]) {
-              total +=
-                BigInt(
-                  data.stocks[name].price
-                ) * BigInt(qty);
-            }
-          }
-
-          for (const [
-            name,
-            qty,
-          ] of Object.entries(
-            a.taxFreeStocks || {}
-          )) {
-            if (data.stocks[name]) {
-              total +=
-                BigInt(
-                  data.stocks[name].price
-                ) * BigInt(qty);
-            }
-          }
-
-          ranking.push({
-            userId,
-            total,
-          });
-        }
-
-        ranking.sort((a, b) =>
-          a.total > b.total ? -1 : 1
-        );
-
-        let text = "🏆 **주식 랭킹**\n\n";
-
-        ranking
-          .slice(0, 10)
-          .forEach((item, index) => {
-            text +=
-              `${index + 1}. <@${item.userId}> ` +
-              `— **${formatMoney(
-                item.total
-              )}원**\n`;
-          });
-
-        if (ranking.length === 0) {
-          text += "아직 참가자가 없습니다.";
-        }
-
-        return interaction.reply({
-          content: text,
-          ephemeral: true,
-        });
-      }
-
-      return;
-    }
-
-    /* ---------- 모달 ---------- */
-
-    if (interaction.isModalSubmit()) {
-      const id = interaction.customId;
-
-      if (id.startsWith("trade_")) {
-        const type = id.replace("trade_", "");
-
-        const stockName =
-          interaction.fields.getTextInputValue(
-            "stock"
-          );
-
-        const quantity =
-          interaction.fields.getTextInputValue(
-            "quantity"
-          );
-
-        if (type === "stock_buy") {
-          return buyStock(
-            interaction,
-            stockName,
-            quantity,
-            false
-          );
-        }
-
-        if (type === "stock_taxbuy") {
-          return buyStock(
-            interaction,
-            stockName,
-            quantity,
-            true
-          );
-        }
-
-        if (type === "stock_sell") {
-          return sellStock(
-            interaction,
-            stockName,
-            quantity,
-            false
-          );
-        }
-
-        if (type === "stock_taxsell") {
-          return sellStock(
-            interaction,
-            stockName,
-            quantity,
-            true
-          );
-        }
-      }
-
-      return;
-    }
-
-    /* ---------- 슬래시 명령어 ---------- */
-
-    if (!interaction.isChatInputCommand()) {
-      return;
-    }
-
-    const command = interaction.commandName;
-
-    const adminOnly = [
-      "선거시작",
-      "후보등록",
-      "선거종료",
-      "결과",
-      "주식메뉴",
-      "돈추가",
-      "돈제거",
-      "면세돈추가",
-      "면세돈제거",
-      "주식추가",
-      "주식삭제",
-      "주식가격",
-      "세금률설정",
-      "로그채널",
-      "관리자메뉴",
-    ];
-
-    if (
-      adminOnly.includes(command) &&
-      !isAdmin(interaction)
-    ) {
-      return replyDelete(
-        interaction,
-        "❌ 서버 관리자만 사용할 수 있습니다."
-      );
-    }
-
-    /* ---------- 주식 메뉴 ---------- */
-
-    if (command === "주식메뉴") {
-      const message =
-        await interaction.channel.send({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle("🏦 주식 거래소")
-              .setDescription(
-                stockText(interaction.guildId)
-              )
-              .setTimestamp(),
-          ],
-          components: stockButtons(),
-        });
-
-      const settings = getGuild(
-        interaction.guildId
-      );
-
-      settings.stockMenuChannelId =
-        interaction.channelId;
-
-      settings.stockMenuMessageId =
-        message.id;
-
-      saveData();
-
-      return replyDelete(
-        interaction,
-        "✅ 주식 거래소 메뉴를 만들었습니다."
-      );
-    }
-
-    /* ---------- 주식 ---------- */
-
-    if (command === "주식참여") {
-      getAccount(interaction.user.id);
-      saveData();
-
-      return interaction.reply({
-        content: "✅ 주식 참여 완료!",
-        ephemeral: true,
-      });
-    }
-
-    if (command === "주식목록") {
-      return interaction.reply({
-        content: stockText(
-          interaction.guildId
-        ),
-        ephemeral: true,
-      });
-    }
-
-    if (command === "잔액") {
-      const a = getAccount(
-        interaction.user.id
-      );
-
-      return interaction.reply({
-        content:
-          `💰 일반돈: **${formatMoney(
-            a.money
-          )}원**\n` +
-          `🛡️ 면세돈: **${formatMoney(
-            a.taxFreeMoney
-          )}원**`,
-        ephemeral: true,
-      });
-    }
-
-    if (command === "내주식") {
-      const a = getAccount(
-        interaction.user.id
-      );
-
-      let text = "📊 **내 주식**\n\n";
-
-      for (const [name, qty] of Object.entries(
-        a.stocks
-      )) {
-        text += `📈 ${name}: **${qty}주**\n`;
-      }
-
-      for (const [
-        name,
-        qty,
-      ] of Object.entries(a.taxFreeStocks)) {
-        text += `🛡️ ${name}: **${qty}주**\n`;
-      }
-
-      if (text === "📊 **내 주식**\n\n") {
-        text += "보유 주식이 없습니다.";
-      }
-
-      return interaction.reply({
-        content: text,
-        ephemeral: true,
-      });
-    }
-
-    if (command === "주식랭킹") {
-      return interaction.reply({
-        content:
-          "🏆 주식 거래소의 **주식 랭킹** 버튼을 이용하세요.",
-        ephemeral: true,
-      });
-    }
-
-    if (command === "매수") {
-      return buyStock(
-        interaction,
-        interaction.options.getString(
-          "종목"
-        ),
-        interaction.options.getInteger(
-          "수량"
-        ),
-        false
-      );
-    }
-
-    if (command === "면세매수") {
-      return buyStock(
-        interaction,
-        interaction.options.getString(
-          "종목"
-        ),
-        interaction.options.getInteger(
-          "수량"
-        ),
-        true
-      );
-    }
-
-    if (command === "매도") {
-      return sellStock(
-        interaction,
-        interaction.options.getString(
-          "종목"
-        ),
-        interaction.options.getInteger(
-          "수량"
-        ),
-        false
-      );
-    }
-
-    if (command === "면세매도") {
-      return sellStock(
-        interaction,
-        interaction.options.getString(
-          "종목"
-        ),
-        interaction.options.getInteger(
-          "수량"
-        ),
-        true
-      );
-    }
-
-    /* =========================
-       선거
-    ========================= */
-
-    if (command === "선거시작") {
-      elections.set(interaction.guildId, {
-        active: true,
-        candidates: {},
-        voters: {},
-      });
-
-      await sendLog(
-        interaction.guildId,
-        "🗳️ 선거 시작",
-        `관리자: ${interaction.user}`
-      );
-
-      return replyDelete(
-        interaction,
-        "✅ 선거가 시작되었습니다."
-      );
-    }
-
-    if (command === "후보등록") {
-      const election =
-        elections.get(interaction.guildId);
-
-      if (!election?.active) {
-        return replyDelete(
-          interaction,
-          "❌ 진행 중인 선거가 없습니다."
-        );
-      }
-
-      const name =
-        interaction.options.getString(
-          "이름"
-        );
-
-      if (
-        Object.keys(election.candidates)
-          .length >= 20
-      ) {
-        return replyDelete(
-          interaction,
-          "❌ 후보는 최대 20명입니다."
-        );
-      }
-
-      if (
-        election.candidates[name] !== undefined
-      ) {
-        return replyDelete(
-          interaction,
-          "❌ 이미 등록된 후보입니다."
-        );
-      }
-
-      election.candidates[name] = 0;
-
-      await sendLog(
-        interaction.guildId,
-        "📝 후보 등록",
-        `후보: **${name}**\n관리자: ${interaction.user}`
-      );
-
-      return replyDelete(
-        interaction,
-        `✅ **${name}** 후보 등록 완료`
-      );
-    }
-
-    if (command === "투표") {
-      const election =
-        elections.get(interaction.guildId);
-
-      if (!election?.active) {
-        return replyDelete(
-          interaction,
-          "❌ 진행 중인 선거가 없습니다."
-        );
-      }
-
-      const candidate =
-        interaction.options.getString(
-          "후보"
-        );
-
-      if (
-        election.candidates[candidate] ===
-        undefined
-      ) {
-        return replyDelete(
-          interaction,
-          "❌ 존재하지 않는 후보입니다."
-        );
-      }
-
-      if (
-        election.voters[
-          interaction.user.id
-        ]
-      ) {
-        return replyDelete(
-          interaction,
-          "❌ 이미 투표했습니다."
-        );
-      }
-
-      election.voters[
-        interaction.user.id
-      ] = candidate;
-
-      election.candidates[candidate]++;
-
-      await sendLog(
-        interaction.guildId,
-        "🗳️ 투표",
-        `사용자: ${interaction.user}\n후보: **${candidate}**`
-      );
-
-      return replyDelete(
-        interaction,
-        `✅ **${candidate}** 후보에게 투표했습니다.`
-      );
-    }
-
-    if (command === "선거종료") {
-      const election =
-        elections.get(interaction.guildId);
-
-      if (!election?.active) {
-        return replyDelete(
-          interaction,
-          "❌ 진행 중인 선거가 없습니다."
-        );
-      }
-
-      election.active = false;
-
-      await sendLog(
-        interaction.guildId,
-        "🛑 선거 종료",
-        `관리자: ${interaction.user}`
-      );
-
-      return replyDelete(
-        interaction,
-        "✅ 선거가 종료되었습니다."
-      );
-    }
-
-    if (command === "결과") {
-      const election =
-        elections.get(interaction.guildId);
-
-      if (!election) {
-        return replyDelete(
-          interaction,
-          "❌ 선거가 없습니다."
-        );
-      }
-
-      const result =
-        Object.entries(
-          election.candidates
-        )
-          .sort(
-            (a, b) => b[1] - a[1]
-          )
-          .map(
-            ([name, votes], index) =>
-              `${index + 1}. **${name}** — ${votes}표`
-          )
-          .join("\n");
-
-      return interaction.reply({
-        content:
-          `📊 **선거 결과**\n\n` +
-          (result ||
-            "후보가 없습니다."),
-        ephemeral: true,
-      });
-    }
-
-    /* =========================
-       돈
-    ========================= */
-
-    if (
-      [
-        "돈추가",
-        "돈제거",
-        "면세돈추가",
-        "면세돈제거",
-      ].includes(command)
-    ) {
-      const user =
-        interaction.options.getUser(
-          "사용자"
-        );
-
-      let rawAmount =
-        interaction.options.getString(
-          "금액"
-        );
-
-      rawAmount = rawAmount.replace(
-        /,/g,
-        ""
-      );
-
-      let amount;
-
-      try {
-        amount = BigInt(rawAmount);
-      } catch {
-        return replyDelete(
-          interaction,
-          "❌ 금액이 올바르지 않습니다."
-        );
-      }
-
-      if (amount <= 0n) {
-        return replyDelete(
-          interaction,
-          "❌ 금액은 1원 이상이어야 합니다."
-        );
-      }
-
-      const a = getAccount(
-        user.id
-      );
-
-      const key =
-        command.startsWith("면세")
-          ? "taxFreeMoney"
-          : "money";
-
-      const isAdd =
-        command.endsWith("추가");
-
-      const old =
-        BigInt(a[key]);
-
-      if (isAdd) {
-        a[key] =
-          (old + amount).toString();
-      } else {
-        a[key] =
-          old > amount
-            ? (old - amount).toString()
-            : "0";
-      }
-
-      saveData();
-
-      await sendLog(
-        interaction.guildId,
-        isAdd
-          ? "💰 돈 추가"
-          : "💸 돈 제거",
-        `관리자: ${interaction.user}\n` +
-          `대상: ${user}\n` +
-          `종류: ${
-            key === "taxFreeMoney"
-              ? "면세돈"
-              : "일반돈"
-          }\n` +
-          `금액: **${formatMoney(
-            amount
-          )}원**`
-      );
-
-      return replyDelete(
-        interaction,
-        `✅ ${isAdd ? "추가" : "제거"} 완료`
-      );
-    }
-
-    /* =========================
-       주식 관리
-    ========================= */
-
-    if (command === "주식추가") {
-      const name =
-        interaction.options.getString(
-          "이름"
-        );
-
-      const price =
-        interaction.options.getInteger(
-          "가격"
-        );
-
-      const type =
-        interaction.options.getString(
-          "종류"
-        );
-
-      if (data.stocks[name]) {
-        return replyDelete(
-          interaction,
-          "❌ 이미 존재하는 주식입니다."
-        );
-      }
-
-      const smallCount =
-        Object.values(data.stocks)
-          .filter(
-            stock =>
-              stock.type === "small"
-          ).length;
-
-      if (
-        type === "small" &&
-        smallCount >= MAX_SMALL_STOCKS
-      ) {
-        return replyDelete(
-          interaction,
-          "❌ 소형 주식은 최대 20종목입니다."
-        );
-      }
-
-      data.stocks[name] = {
-        price,
-        type,
-      };
-
-      saveData();
-
-      await sendLog(
-        interaction.guildId,
-        "➕ 주식 추가",
-        `종목: **${name}**\n` +
-          `가격: **${formatMoney(
-            price
-          )}원**\n` +
-          `종류: **${
-            type === "large"
-              ? "대형"
-              : "소형"
-          }**`
-      );
-
-      await replyDelete(
-        interaction,
-        "✅ 주식 추가 완료"
-      );
-
-      await updateAllStockMenus();
-
-      return;
-    }
-
-    if (command === "주식삭제") {
-      const name =
-        interaction.options.getString(
-          "이름"
-        );
-
-      if (!data.stocks[name]) {
-        return replyDelete(
-          interaction,
-          "❌ 존재하지 않는 주식입니다."
-        );
-      }
-
-      for (const a of Object.values(
-        data.users
-      )) {
         if (
-          Number(
-            a.stocks?.[name] || 0
-          ) > 0 ||
-          Number(
-            a.taxFreeStocks?.[name] || 0
-          ) > 0
+          text ===
+          "📊 **내 주식**\n\n"
+        ) {
+          text +=
+            "보유 주식이 없습니다.";
+        }
+
+        return interaction.reply({
+          content: text,
+          ephemeral: true,
+        });
+      }
+
+      if (
+        command === "주식랭킹"
+      ) {
+        return interaction.reply({
+          content:
+            "🏆 거래소의 주식 랭킹 버튼을 이용하세요.",
+          ephemeral: true,
+        });
+      }
+
+      if (command === "매수") {
+        return buyStock(
+          interaction,
+          interaction.options.getString(
+            "종목"
+          ),
+          interaction.options.getInteger(
+            "수량"
+          ),
+          false
+        );
+      }
+
+      if (
+        command === "면세매수"
+      ) {
+        return buyStock(
+          interaction,
+          interaction.options.getString(
+            "종목"
+          ),
+          interaction.options.getInteger(
+            "수량"
+          ),
+          true
+        );
+      }
+
+      if (command === "매도") {
+        return sellStock(
+          interaction,
+          interaction.options.getString(
+            "종목"
+          ),
+          interaction.options.getInteger(
+            "수량"
+          ),
+          false
+        );
+      }
+
+      if (
+        command === "면세매도"
+      ) {
+        return sellStock(
+          interaction,
+          interaction.options.getString(
+            "종목"
+          ),
+          interaction.options.getInteger(
+            "수량"
+          ),
+          true
+        );
+      }
+
+      /* =========================
+         선거 시작
+      ========================= */
+
+      if (
+        command === "선거시작"
+      ) {
+        elections.set(
+          interaction.guildId,
+          {
+            active: true,
+            candidates: {},
+            voters: {},
+            candidateListChannelId:
+              null,
+            candidateListMessageId:
+              null,
+          }
+        );
+
+        await sendLog(
+          interaction.guildId,
+          "🗳️ 선거 시작",
+          `관리자: ${interaction.user}`
+        );
+
+        return replyDelete(
+          interaction,
+          "✅ 선거가 시작되었습니다.\n관리자는 /후보등록 후 /후보목록을 사용하세요."
+        );
+      }
+
+      /* =========================
+         후보 등록
+      ========================= */
+
+      if (
+        command === "후보등록"
+      ) {
+        const election =
+          elections.get(
+            interaction.guildId
+          );
+
+        if (
+          !election?.active
         ) {
           return replyDelete(
             interaction,
-            "❌ 누군가 보유 중인 주식이라 삭제할 수 없습니다."
+            "❌ 진행 중인 선거가 없습니다."
           );
         }
-      }
 
-      delete data.stocks[name];
+        const name =
+          interaction.options.getString(
+            "이름"
+          );
 
-      saveData();
+        if (
+          Object.keys(
+            election.candidates
+          ).length >= 20
+        ) {
+          return replyDelete(
+            interaction,
+            "❌ 후보는 최대 20명입니다."
+          );
+        }
 
-      await sendLog(
-        interaction.guildId,
-        "➖ 주식 삭제",
-        `종목: **${name}**`
-      );
+        if (
+          election.candidates[
+            name
+          ] !== undefined
+        ) {
+          return replyDelete(
+            interaction,
+            "❌ 이미 등록된 후보입니다."
+          );
+        }
 
-      await replyDelete(
-        interaction,
-        "✅ 주식 삭제 완료"
-      );
+        election.candidates[
+          name
+        ] = 0;
 
-      await updateAllStockMenus();
-
-      return;
-    }
-
-    if (command === "주식가격") {
-      const name =
-        interaction.options.getString(
-          "이름"
+        await updateCandidateList(
+          interaction.guildId
         );
 
-      const price =
-        interaction.options.getInteger(
-          "가격"
+        await sendLog(
+          interaction.guildId,
+          "📝 후보 등록",
+          `후보: **${name}**\n관리자: ${interaction.user}`
         );
 
-      if (!data.stocks[name]) {
         return replyDelete(
           interaction,
-          "❌ 존재하지 않는 주식입니다."
+          `✅ **${name}** 후보 등록 완료`
         );
       }
 
-      const old =
-        data.stocks[name].price;
-
-      data.stocks[name].price =
-        price;
-
-      saveData();
-
-      await sendLog(
-        interaction.guildId,
-        "💹 주가 변경",
-        `종목: **${name}**\n` +
-          `기존: **${formatMoney(
-            old
-          )}원**\n` +
-          `변경: **${formatMoney(
-            price
-          )}원**`
-      );
-
-      await replyDelete(
-        interaction,
-        "✅ 주가 변경 완료"
-      );
-
-      await updateAllStockMenus();
-
-      return;
-    }
-
-    /* =========================
-       세율
-    ========================= */
-
-    if (command === "세금률설정") {
-      const rate =
-        interaction.options.getInteger(
-          "세율"
-        );
-
-      const settings =
-        getGuild(interaction.guildId);
-
-      const old = settings.taxRate;
-
-      settings.taxRate = rate;
-
-      saveData();
-
-      await sendLog(
-        interaction.guildId,
-        "🧾 세율 변경",
-        `관리자: ${interaction.user}\n` +
-          `기존: **${old}%**\n` +
-          `변경: **${rate}%**`
-      );
-
-      await replyDelete(
-        interaction,
-        `✅ 세율이 **${rate}%**로 변경되었습니다.`
-      );
-
-      await updateAllStockMenus();
-
-      return;
-    }
-
-    /* =========================
-       로그 채널
-    ========================= */
-
-    if (command === "로그채널") {
-      const channel =
-        interaction.options.getChannel(
-          "채널"
-        );
+      /* =========================
+         후보 목록 게시
+      ========================= */
 
       if (
-        !channel ||
-        channel.type !==
-          ChannelType.GuildText
+        command === "후보목록"
       ) {
+        const election =
+          elections.get(
+            interaction.guildId
+          );
+
+        if (!election) {
+          return replyDelete(
+            interaction,
+            "❌ 먼저 /선거시작 을 해주세요."
+          );
+        }
+
+        const candidates =
+          Object.keys(
+            election.candidates
+          );
+
+        let text = "";
+
+        if (
+          candidates.length === 0
+        ) {
+          text =
+            "아직 등록된 후보가 없습니다.";
+        } else {
+          candidates.forEach(
+            (name, index) => {
+              text +=
+                `${index + 1}. **${name}**\n`;
+            }
+          );
+        }
+
+        const message =
+          await interaction.channel.send(
+            {
+              embeds: [
+                new EmbedBuilder()
+                  .setTitle(
+                    "🗳️ 후보 목록"
+                  )
+                  .setDescription(text)
+                  .setFooter({
+                    text:
+                      "관리자가 게시한 후보 목록",
+                  })
+                  .setTimestamp(),
+              ],
+            }
+          );
+
+        election.candidateListChannelId =
+          interaction.channelId;
+
+        election.candidateListMessageId =
+          message.id;
+
         return replyDelete(
           interaction,
-          "❌ 텍스트 채널을 선택해주세요."
+          "✅ 후보 목록을 게시했습니다."
         );
       }
 
-      getGuild(
-        interaction.guildId
-      ).logChannelId = channel.id;
+      /* =========================
+         투표
+      ========================= */
 
-      saveData();
+      if (
+        command === "투표"
+      ) {
+        const election =
+          elections.get(
+            interaction.guildId
+          );
 
-      return replyDelete(
-        interaction,
-        `✅ 로그 채널을 ${channel}로 설정했습니다.`
-      );
-    }
+        if (
+          !election?.active
+        ) {
+          return replyDelete(
+            interaction,
+            "❌ 진행 중인 선거가 없습니다."
+          );
+        }
 
-    /* =========================
-       관리자 메뉴
-    ========================= */
+        const candidate =
+          interaction.options.getString(
+            "후보"
+          );
 
-    if (command === "관리자메뉴") {
-      const rows = [
-        new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId("admin_help")
-            .setLabel("관리자 명령어")
-            .setStyle(
-              ButtonStyle.Primary
+        if (
+          election.candidates[
+            candidate
+          ] === undefined
+        ) {
+          return replyDelete(
+            interaction,
+            "❌ 존재하지 않는 후보입니다."
+          );
+        }
+
+        if (
+          election.voters[
+            interaction.user.id
+          ]
+        ) {
+          return replyDelete(
+            interaction,
+            "❌ 이미 투표했습니다."
+          );
+        }
+
+        election.voters[
+          interaction.user.id
+        ] = candidate;
+
+        election.candidates[
+          candidate
+        ]++;
+
+        await sendLog(
+          interaction.guildId,
+          "🗳️ 투표",
+          `사용자: ${interaction.user}\n후보: **${candidate}**`
+        );
+
+        return replyDelete(
+          interaction,
+          `✅ **${candidate}** 후보에게 투표했습니다.`
+        );
+      }
+
+      /* =========================
+         선거 종료
+      ========================= */
+
+      if (
+        command === "선거종료"
+      ) {
+        const election =
+          elections.get(
+            interaction.guildId
+          );
+
+        if (
+          !election?.active
+        ) {
+          return replyDelete(
+            interaction,
+            "❌ 진행 중인 선거가 없습니다."
+          );
+        }
+
+        election.active = false;
+
+        await sendLog(
+          interaction.guildId,
+          "🛑 선거 종료",
+          `관리자: ${interaction.user}`
+        );
+
+        return replyDelete(
+          interaction,
+          "✅ 선거가 종료되었습니다."
+        );
+      }
+
+      /* =========================
+         결과
+      ========================= */
+
+      if (command === "결과") {
+        const election =
+          elections.get(
+            interaction.guildId
+          );
+
+        if (!election) {
+          return replyDelete(
+            interaction,
+            "❌ 선거가 없습니다."
+          );
+        }
+
+        const result =
+          Object.entries(
+            election.candidates
+          )
+            .sort(
+              (a, b) =>
+                b[1] - a[1]
             )
-        ),
-      ];
+            .map(
+              ([name, votes], index) =>
+                `${index + 1}. **${name}** — ${votes}표`
+            )
+            .join("\n");
 
-      return interaction.channel
-        .send({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle("👑 관리자 메뉴")
-              .setDescription(
-                "관리자 전용 명령어\n\n" +
+        return interaction.reply({
+          content:
+            `📊 **선거 결과**\n\n` +
+            (result ||
+              "후보가 없습니다."),
+          ephemeral: true,
+        });
+      }
+
+      /* =========================
+         돈
+      ========================= */
+
+      if (
+        [
+          "돈추가",
+          "돈제거",
+          "면세돈추가",
+          "면세돈제거",
+        ].includes(command)
+      ) {
+        const user =
+          interaction.options.getUser(
+            "사용자"
+          );
+
+        let raw =
+          interaction.options.getString(
+            "금액"
+          );
+
+        raw = raw.replace(
+          /,/g,
+          ""
+        );
+
+        let amount;
+
+        try {
+          amount = BigInt(raw);
+        } catch {
+          return replyDelete(
+            interaction,
+            "❌ 금액이 올바르지 않습니다."
+          );
+        }
+
+        if (amount <= 0n) {
+          return replyDelete(
+            interaction,
+            "❌ 금액은 1원 이상이어야 합니다."
+          );
+        }
+
+        const a =
+          getAccount(user.id);
+
+        const key =
+          command.startsWith("면세")
+            ? "taxFreeMoney"
+            : "money";
+
+        const add =
+          command.endsWith("추가");
+
+        const old =
+          BigInt(a[key]);
+
+        if (add) {
+          a[key] =
+            (
+              old + amount
+            ).toString();
+        } else {
+          a[key] =
+            old > amount
+              ? (
+                  old - amount
+                ).toString()
+              : "0";
+        }
+
+        saveData();
+
+        await sendLog(
+          interaction.guildId,
+          add
+            ? "💰 돈 추가"
+            : "💸 돈 제거",
+          `관리자: ${interaction.user}\n` +
+            `대상: ${user}\n` +
+            `종류: ${
+              key ===
+              "taxFreeMoney"
+                ? "면세돈"
+                : "일반돈"
+            }\n` +
+            `금액: **${formatMoney(
+              amount
+            )}원**`
+        );
+
+        return replyDelete(
+          interaction,
+          `✅ ${
+            add ? "추가" : "제거"
+          } 완료`
+        );
+      }
+
+      /* =========================
+         주식 추가
+      ========================= */
+
+      if (
+        command === "주식추가"
+      ) {
+        const name =
+          interaction.options.getString(
+            "이름"
+          );
+
+        const price =
+          interaction.options.getInteger(
+            "가격"
+          );
+
+        const type =
+          interaction.options.getString(
+            "종류"
+          );
+
+        if (data.stocks[name]) {
+          return replyDelete(
+            interaction,
+            "❌ 이미 존재하는 주식입니다."
+          );
+        }
+
+        const smallCount =
+          Object.values(
+            data.stocks
+          ).filter(
+            s =>
+              s.type === "small"
+          ).length;
+
+        if (
+          type === "small" &&
+          smallCount >=
+            MAX_SMALL_STOCKS
+        ) {
+          return replyDelete(
+            interaction,
+            "❌ 소형 주식은 최대 20종목입니다."
+          );
+        }
+
+        data.stocks[name] = {
+          price,
+          type,
+        };
+
+        saveData();
+
+        await sendLog(
+          interaction.guildId,
+          "➕ 주식 추가",
+          `종목: **${name}**\n` +
+            `가격: **${formatMoney(
+              price
+            )}원**`
+        );
+
+        await replyDelete(
+          interaction,
+          "✅ 주식 추가 완료"
+        );
+
+        await updateAllStockMenus();
+
+        return;
+      }
+
+      /* =========================
+         주식 삭제
+      ========================= */
+
+      if (
+        command === "주식삭제"
+      ) {
+        const name =
+          interaction.options.getString(
+            "이름"
+          );
+
+        if (!data.stocks[name]) {
+          return replyDelete(
+            interaction,
+            "❌ 존재하지 않는 주식입니다."
+          );
+        }
+
+        for (const a of Object.values(
+          data.users
+        )) {
+          if (
+            Number(
+              a.stocks?.[name] ||
+                0
+            ) > 0 ||
+            Number(
+              a.taxFreeStocks?.[
+                name
+              ] || 0
+            ) > 0
+          ) {
+            return replyDelete(
+              interaction,
+              "❌ 누군가 보유 중인 주식이라 삭제할 수 없습니다."
+            );
+          }
+        }
+
+        delete data.stocks[name];
+
+        saveData();
+
+        await sendLog(
+          interaction.guildId,
+          "➖ 주식 삭제",
+          `종목: **${name}**`
+        );
+
+        await replyDelete(
+          interaction,
+          "✅ 주식 삭제 완료"
+        );
+
+        await updateAllStockMenus();
+
+        return;
+      }
+
+      /* =========================
+         주가 변경
+      ========================= */
+
+      if (
+        command === "주식가격"
+      ) {
+        const name =
+          interaction.options.getString(
+            "이름"
+          );
+
+        const price =
+          interaction.options.getInteger(
+            "가격"
+          );
+
+        if (!data.stocks[name]) {
+          return replyDelete(
+            interaction,
+            "❌ 존재하지 않는 주식입니다."
+          );
+        }
+
+        const old =
+          data.stocks[name].price;
+
+        data.stocks[name].price =
+          price;
+
+        saveData();
+
+        await sendLog(
+          interaction.guildId,
+          "💹 주가 변경",
+          `종목: **${name}**\n` +
+            `기존: **${formatMoney(
+              old
+            )}원**\n` +
+            `변경: **${formatMoney(
+              price
+            )}원**`
+        );
+
+        await replyDelete(
+          interaction,
+          "✅ 주가 변경 완료"
+        );
+
+        await updateAllStockMenus();
+
+        return;
+      }
+
+      /* =========================
+         세율
+      ========================= */
+
+      if (
+        command === "세금률설정"
+      ) {
+        const rate =
+          interaction.options.getInteger(
+            "세율"
+          );
+
+        const settings =
+          getGuild(
+            interaction.guildId
+          );
+
+        const old =
+          settings.taxRate;
+
+        settings.taxRate = rate;
+
+        saveData();
+
+        await sendLog(
+          interaction.guildId,
+          "🧾 세율 변경",
+          `기존: **${old}%**\n변경: **${rate}%**`
+        );
+
+        await replyDelete(
+          interaction,
+          `✅ 세율이 **${rate}%**로 변경되었습니다.`
+        );
+
+        await updateAllStockMenus();
+
+        return;
+      }
+
+      /* =========================
+         로그 채널
+      ========================= */
+
+      if (
+        command === "로그채널"
+      ) {
+        const channel =
+          interaction.options.getChannel(
+            "채널"
+          );
+
+        if (
+          !channel ||
+          channel.type !==
+            ChannelType.GuildText
+        ) {
+          return replyDelete(
+            interaction,
+            "❌ 텍스트 채널을 선택해주세요."
+          );
+        }
+
+        getGuild(
+          interaction.guildId
+        ).logChannelId =
+          channel.id;
+
+        saveData();
+
+        return replyDelete(
+          interaction,
+          `✅ 로그 채널을 ${channel}로 설정했습니다.`
+        );
+      }
+
+      /* =========================
+         관리자 메뉴
+      ========================= */
+
+      if (
+        command === "관리자메뉴"
+      ) {
+        return interaction.channel
+          .send({
+            embeds: [
+              new EmbedBuilder()
+                .setTitle(
+                  "👑 관리자 메뉴"
+                )
+                .setDescription(
+                  "관리자 전용 명령어\n\n" +
                   "`/주식추가`\n" +
                   "`/주식삭제`\n" +
                   "`/주식가격`\n" +
@@ -1909,90 +2244,92 @@ client.on("interactionCreate", async interaction => {
                   "`/로그채널`\n" +
                   "`/선거시작`\n" +
                   "`/후보등록`\n" +
+                  "`/후보목록`\n" +
                   "`/선거종료`\n" +
                   "`/결과`"
-              )
-              .setTimestamp(),
-          ],
-          components: rows,
-        })
-        .then(() =>
-          replyDelete(
-            interaction,
-            "✅ 관리자 메뉴 생성 완료"
-          )
-        );
-    }
-  } catch (err) {
-    console.error(
-      "❌ Interaction 오류:",
-      err
-    );
-
-    try {
-      if (!interaction.replied) {
-        await interaction.reply({
-          content:
-            "❌ 처리 중 오류가 발생했습니다.",
-          ephemeral: true,
-        });
+                )
+                .setTimestamp(),
+            ],
+          })
+          .then(() =>
+            replyDelete(
+              interaction,
+              "✅ 관리자 메뉴 생성 완료"
+            )
+          );
       }
-    } catch {}
+    } catch (e) {
+      console.error(
+        "Interaction 오류:",
+        e
+      );
+
+      try {
+        if (
+          !interaction.replied
+        ) {
+          await interaction.reply({
+            content:
+              "❌ 처리 중 오류가 발생했습니다.",
+            ephemeral: true,
+          });
+        }
+      } catch {}
+    }
   }
-});
+);
 
 /* =========================
    5분마다 주가 ±5%
 ========================= */
 
-setInterval(async () => {
-  let changed = false;
-  const changes = [];
+setInterval(
+  async () => {
+    const changes = [];
 
-  for (const [
-    name,
-    stock,
-  ] of Object.entries(data.stocks)) {
-    const old = Number(
-      stock.price
-    );
+    for (const [
+      name,
+      stock,
+    ] of Object.entries(
+      data.stocks
+    )) {
+      const old =
+        Number(stock.price);
 
-    const percent =
-      Math.floor(
-        Math.random() * 11
-      ) - 5;
+      const percent =
+        Math.floor(
+          Math.random() * 11
+        ) - 5;
 
-    const next = Math.max(
-      1,
-      Math.round(
-        old *
-          (100 + percent) /
-          100
-      )
-    );
+      const next =
+        Math.max(
+          1,
+          Math.round(
+            old *
+              (100 + percent) /
+              100
+          )
+        );
 
-    if (next !== old) {
       stock.price = next;
 
-      changed = true;
-
-      changes.push(
-        `${name}: ${formatMoney(
-          old
-        )}원 → ${formatMoney(
-          next
-        )}원 (${percent >= 0 ? "+" : ""}${percent}%)`
-      );
+      if (old !== next) {
+        changes.push(
+          `${name}: ${formatMoney(
+            old
+          )}원 → ${formatMoney(
+            next
+          )}원`
+        );
+      }
     }
-  }
 
-  if (changed) {
-    saveData();
+    if (changes.length) {
+      saveData();
 
-    await updateAllStockMenus();
+      await updateAllStockMenus();
 
-    for (const guild of client.guilds.cache.values()) {
-      if (changes.length > 0) {
+      for (const guild of client.guilds.cache.values()) {
         await sendLog(
           guild.id,
           "📈 자동 주가 변동",
@@ -2000,17 +2337,20 @@ setInterval(async () => {
         );
       }
     }
-  }
-}, 5 * 60 * 1000);
+  },
+  5 * 60 * 1000
+);
 
 /* =========================
-   Deploy Hatch
+   서버
 ========================= */
 
 const app = express();
 
 app.get("/", (req, res) => {
-  res.send("Discord Election & Stock Bot is running.");
+  res.send(
+    "Discord Election & Stock Bot is running."
+  );
 });
 
 const PORT =
@@ -2026,30 +2366,14 @@ app.listen(PORT, () => {
    로그인
 ========================= */
 
-if (!TOKEN) {
-  console.error(
-    "❌ DISCORD_TOKEN 환경변수가 없습니다."
-  );
-}
-
-if (!CLIENT_ID) {
-  console.error(
-    "❌ CLIENT_ID 환경변수가 없습니다."
-  );
-}
-
-if (TOKEN) {
-  client
-    .login(TOKEN)
-    .then(() => {
-      console.log(
-        "🔐 Discord 로그인 요청 성공"
-      );
-    })
-    .catch(err => {
-      console.error(
-        "❌ Discord 로그인 실패:",
-        err.message
-      );
-    });
-  }
+client
+  .login(TOKEN)
+  .then(() => {
+    console.log("🔐 Discord 로그인 성공");
+  })
+  .catch(err => {
+    console.error(
+      "❌ Discord 로그인 실패:",
+      err.message
+    );
+  });
