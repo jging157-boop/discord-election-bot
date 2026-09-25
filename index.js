@@ -4126,4 +4126,4 @@ ${savingsListText(user)}
         totalReceive
       )}`
     );
-        }
+}
