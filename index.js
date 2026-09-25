@@ -19,6 +19,7 @@ const fs = require("fs");
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
+const rest = new REST({ version: "10" }).setToken(TOKEN);
 const DATA_FILE = "./stock-data.json";
 
 if (!TOKEN || !CLIENT_ID) {
