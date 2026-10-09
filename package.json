@@ -1,12 +1,12 @@
 {
-  "name": "discord-election-bot",
+  "name": "discord-economy-bot",
   "version": "1.0.0",
+  "description": "Discord economy bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "discord.js": "^14.21.0",
-    "express": "^5.1.0"
+    "discord.js": "^14.19.3"
   }
 }
